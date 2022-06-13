@@ -12,12 +12,28 @@ use eframe::egui::{
     TextStyle,
     Button
 };
+use newsapi::NewsAPI;
 
 const PADDING: f32 = 5.0;
 const WHITE: Color32 = Color32::from_rgb(255, 255, 255);
 const BLACK: Color32 = Color32::from_rgb(0, 0, 0);
 const RED: Color32 = Color32::from_rgb(255, 0, 0);
 const CYAN: Color32 = Color32::from_rgb(0, 255, 255);
+
+fn fetch_news(api_key: &str, articles: &mut Vec<NewsCardData>) {
+    if let Ok(response) = NewsAPI::new(api_key).fetch() {
+        tracing::info!("Fetched!");
+        let response_articles = response.articles();
+        for a in response_articles.iter() {
+            let news = NewsCardData {
+                title: a.title().to_string(),
+                url: a.url().to_string(),
+                description: a.description().to_string()
+            };
+            articles.push(news);
+        }
+    }
+}
 
 #[derive(Default, Serialize, Deserialize)]
 struct HeadlinesConfig {
@@ -70,18 +86,24 @@ fn setup_custom_fonts(ctx: &eframe::egui::Context) {
 impl Headlines {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         setup_custom_fonts(&cc.egui_ctx);
-        let iter = (0..7).map(|a| NewsCardData {
-            title: format!("title: {}", a),
-            description: format!("description: {}", a),
-            url: format!("url: {}", a)
-        });
 
         let config: HeadlinesConfig = confy::load("headlines").unwrap_or_default();
 
-        Headlines {
-            articles: Vec::from_iter(iter),
-            config,
-            api_key_initialized: false
+        let mut articles: Vec<NewsCardData> = Vec::new();
+
+        if config.api_key.is_empty() {
+            Headlines {
+                api_key_initialized: false,
+                articles,
+                config
+            }
+        } else {
+            fetch_news(&config.api_key, &mut articles);
+            Headlines {
+                api_key_initialized: true,
+                articles,
+                config
+            }
         }
     }
   
