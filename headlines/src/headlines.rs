@@ -104,7 +104,7 @@ impl Headlines {
         }
     }
 
-    fn render_top_panel(&mut self, ctx: &eframe::egui::Context) {
+    fn render_top_panel(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
         TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.add_space(10.);
             eframe::egui::menu::bar(ui, |ui| {
@@ -113,9 +113,12 @@ impl Headlines {
                 });
                 ui.with_layout(Layout::right_to_left(), |ui| {
                     let close_btn = ui.add(Button::new(RichText::new("X").text_style(TextStyle::Body)));
+                    if close_btn.clicked() {
+                        frame.quit()
+                    }
                     let refresh_btn = ui.add(Button::new(RichText::new("r").text_style(TextStyle::Body)));
-                    let theme_btn = ui.add(Button::new(RichText::new("@").text_style(TextStyle::Body)));
 
+                    let theme_btn = ui.add(Button::new(RichText::new("@").text_style(TextStyle::Body)));
                     if theme_btn.clicked() {
                         self.config.dark_mode = !self.config.dark_mode;
                     }
@@ -127,13 +130,13 @@ impl Headlines {
 }
 
 impl App for Headlines {
-    fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
         if self.config.dark_mode {
             ctx.set_visuals(eframe::egui::Visuals::dark());
         } else {
             ctx.set_visuals(eframe::egui::Visuals::light());
         }
-        self.render_top_panel(ctx);
+        self.render_top_panel(ctx, frame);
         eframe::egui::CentralPanel::default().show(ctx, |ui| {
             render_header(ui);
             eframe::egui::containers::ScrollArea::new([false, true])
