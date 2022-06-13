@@ -1,5 +1,7 @@
+use serde::{ Serialize, Deserialize };
 use eframe::App;
 use eframe::egui::{
+    Window,
     Color32,
     RichText,
     Layout,
@@ -17,17 +19,10 @@ const BLACK: Color32 = Color32::from_rgb(0, 0, 0);
 const RED: Color32 = Color32::from_rgb(255, 0, 0);
 const CYAN: Color32 = Color32::from_rgb(0, 255, 255);
 
-#[derive(Default)]
+#[derive(Default, Serialize, Deserialize)]
 struct HeadlinesConfig {
-    dark_mode: bool
-}
-
-impl HeadlinesConfig {
-    fn new() -> Self {
-        Self {
-            dark_mode: true
-        }
-    }
+    dark_mode: bool,
+    api_key: String
 }
 
 struct NewsCardData {
@@ -80,12 +75,14 @@ impl Headlines {
             url: format!("url: {}", a)
         });
 
+        let config: HeadlinesConfig = confy::load("headlines").unwrap_or_default();
+
         Headlines {
             articles: Vec::from_iter(iter),
-            config: HeadlinesConfig::new()
+            config
         }
     }
-
+  
     fn render_news_cards(&self, ui: &mut eframe::egui::Ui) {
         for a in &self.articles {
             ui.add_space(PADDING);
@@ -139,6 +136,15 @@ impl Headlines {
             ui.add_space(10.);
         });
     }
+
+    fn render_config(&mut self, ctx: &eframe::egui::Context) {
+        Window::new("Configuration").show(ctx, |ui| {
+            ui.label("Enter your API_KEY for newsapi.org");
+            let text_input = ui.text_edit_singleline(&mut self.config.api_key);
+            ui.label("If you don't have an API key, create one at");
+            ui.hyperlink("https://newsapi.org");
+        });
+    }
 }
 
 impl App for Headlines {
@@ -148,6 +154,7 @@ impl App for Headlines {
         } else {
             ctx.set_visuals(eframe::egui::Visuals::light());
         }
+        self.render_config(ctx);
         self.render_top_panel(ctx, frame);
         eframe::egui::CentralPanel::default().show(ctx, |ui| {
             render_header(ui);
