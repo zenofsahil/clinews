@@ -13,6 +13,8 @@ use eframe::egui::{
 
 const PADDING: f32 = 5.0;
 const WHITE: Color32 = Color32::from_rgb(255, 255, 255);
+const BLACK: Color32 = Color32::from_rgb(0, 0, 0);
+const RED: Color32 = Color32::from_rgb(255, 0, 0);
 const CYAN: Color32 = Color32::from_rgb(0, 255, 255);
 
 #[derive(Default)]
@@ -87,14 +89,24 @@ impl Headlines {
     fn render_news_cards(&self, ui: &mut eframe::egui::Ui) {
         for a in &self.articles {
             ui.add_space(PADDING);
+
             let title = format!("> {}", a.title);
-            ui.colored_label(WHITE, title);
+            if self.config.dark_mode {
+                ui.colored_label(WHITE, title);
+            } else {
+                ui.colored_label(BLACK, title);
+            }
 
             ui.add_space(PADDING);
             let description = RichText::new(&a.description).text_style(eframe::egui::TextStyle::Button);
             ui.label(description);
+            
+            if self.config.dark_mode {
+                ui.style_mut().visuals.hyperlink_color = CYAN;
+            } else {
+                ui.style_mut().visuals.hyperlink_color = RED;
+            }
 
-            ui.style_mut().visuals.hyperlink_color = CYAN;
             ui.add_space(PADDING);
             ui.allocate_ui_with_layout( Vec2::new(ui.available_width(), 0.0), Layout::right_to_left(), |ui| {
                 ui.hyperlink_to("read more...", &a.url);
