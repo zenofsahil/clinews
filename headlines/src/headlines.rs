@@ -34,7 +34,8 @@ pub struct NewsCardData {
 #[derive(Default)]
 pub struct Headlines {
     articles: Vec<NewsCardData>,
-    config: HeadlinesConfig
+    config: HeadlinesConfig,
+    api_key_initialized: bool
 }
 
 fn setup_custom_fonts(ctx: &eframe::egui::Context) {
@@ -79,7 +80,8 @@ impl Headlines {
 
         Headlines {
             articles: Vec::from_iter(iter),
-            config
+            config,
+            api_key_initialized: false
         }
     }
   
@@ -141,6 +143,18 @@ impl Headlines {
         Window::new("Configuration").show(ctx, |ui| {
             ui.label("Enter your API_KEY for newsapi.org");
             let text_input = ui.text_edit_singleline(&mut self.config.api_key);
+            if text_input.lost_focus() && ui.input().key_pressed(eframe::egui::Key::Enter) {
+                if let Err(e) = confy::store("headlines", HeadlinesConfig {
+                    dark_mode: self.config.dark_mode,
+                    api_key: self.config.api_key.to_owned()
+                }) {
+                    tracing::error!("Failed saving the app state: {}", e);
+                }
+
+                self.api_key_initialized = true;
+
+                tracing::info!("API key set");
+            }
             ui.label("If you don't have an API key, create one at");
             ui.hyperlink("https://newsapi.org");
         });
@@ -154,18 +168,21 @@ impl App for Headlines {
         } else {
             ctx.set_visuals(eframe::egui::Visuals::light());
         }
-        self.render_config(ctx);
-        self.render_top_panel(ctx, frame);
-        eframe::egui::CentralPanel::default().show(ctx, |ui| {
-            render_header(ui);
-            eframe::egui::containers::ScrollArea::new([false, true])
-                .auto_shrink([false, false])
-                .always_show_scroll(false)
-                .show(ui, |ui| self.render_news_cards(ui));
-            render_footer(ctx);
-            });
-    }
 
+        if !self.api_key_initialized {
+            self.render_config(ctx);
+        } else {
+            self.render_top_panel(ctx, frame);
+            eframe::egui::CentralPanel::default().show(ctx, |ui| {
+                render_header(ui);
+                eframe::egui::containers::ScrollArea::new([false, true])
+                    .auto_shrink([false, false])
+                    .always_show_scroll(false)
+                    .show(ui, |ui| self.render_news_cards(ui));
+                render_footer(ctx);
+                });
+        }
+    }
 }
 
 fn render_footer(ctx: &eframe::egui::Context) {
