@@ -25,10 +25,10 @@ struct HeadlinesConfig {
     api_key: String
 }
 
-struct NewsCardData {
-    title: String,
-    url: String,
-    description: String
+pub struct NewsCardData {
+    pub title: String,
+    pub url: String,
+    pub description: String
 }
 
 #[derive(Default)]
