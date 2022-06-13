@@ -15,6 +15,19 @@ const PADDING: f32 = 5.0;
 const WHITE: Color32 = Color32::from_rgb(255, 255, 255);
 const CYAN: Color32 = Color32::from_rgb(0, 255, 255);
 
+#[derive(Default)]
+struct HeadlinesConfig {
+    dark_mode: bool
+}
+
+impl HeadlinesConfig {
+    fn new() -> Self {
+        Self {
+            dark_mode: true
+        }
+    }
+}
+
 struct NewsCardData {
     title: String,
     url: String,
@@ -23,7 +36,8 @@ struct NewsCardData {
 
 #[derive(Default)]
 pub struct Headlines {
-    articles: Vec<NewsCardData>
+    articles: Vec<NewsCardData>,
+    config: HeadlinesConfig
 }
 
 fn setup_custom_fonts(ctx: &eframe::egui::Context) {
@@ -65,7 +79,8 @@ impl Headlines {
         });
 
         Headlines {
-            articles: Vec::from_iter(iter)
+            articles: Vec::from_iter(iter),
+            config: HeadlinesConfig::new()
         }
     }
 
@@ -89,7 +104,7 @@ impl Headlines {
         }
     }
 
-    fn render_top_panel(&self, ctx: &eframe::egui::Context) {
+    fn render_top_panel(&mut self, ctx: &eframe::egui::Context) {
         TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.add_space(10.);
             eframe::egui::menu::bar(ui, |ui| {
@@ -100,6 +115,10 @@ impl Headlines {
                     let close_btn = ui.add(Button::new(RichText::new("X").text_style(TextStyle::Body)));
                     let refresh_btn = ui.add(Button::new(RichText::new("r").text_style(TextStyle::Body)));
                     let theme_btn = ui.add(Button::new(RichText::new("@").text_style(TextStyle::Body)));
+
+                    if theme_btn.clicked() {
+                        self.config.dark_mode = !self.config.dark_mode;
+                    }
                 });
             });
             ui.add_space(10.);
@@ -109,7 +128,11 @@ impl Headlines {
 
 impl App for Headlines {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
-        ctx.set_visuals(eframe::egui::Visuals::dark());
+        if self.config.dark_mode {
+            ctx.set_visuals(eframe::egui::Visuals::dark());
+        } else {
+            ctx.set_visuals(eframe::egui::Visuals::light());
+        }
         self.render_top_panel(ctx);
         eframe::egui::CentralPanel::default().show(ctx, |ui| {
             render_header(ui);
