@@ -1,4 +1,5 @@
 use serde::{ Serialize, Deserialize };
+use std::{sync::mpsc::{ Receiver, Sender, channel, sync_channel, SyncSender }, thread};
 use eframe::App;
 use eframe::egui::{
     Window,
@@ -20,22 +21,8 @@ const BLACK: Color32 = Color32::from_rgb(0, 0, 0);
 const RED: Color32 = Color32::from_rgb(255, 0, 0);
 const CYAN: Color32 = Color32::from_rgb(0, 255, 255);
 
-fn fetch_news(api_key: &str, articles: &mut Vec<NewsCardData>) {
-    let response = NewsAPI::new(api_key).fetch();
-    if let Ok(response) = response {
-        tracing::info!("Fetched!");
-        let response_articles = response.articles();
-        for a in response_articles.iter() {
-            let news = NewsCardData {
-                title: a.title().to_string(),
-                url: a.url().to_string(),
-                description: a.description().map(|s| s.to_string()).unwrap_or("...".to_string())
-            };
-            articles.push(news);
-        }
-    } else {
-        tracing::error!("Could not fetch articles: {:?}", response);
-    }
+enum Msg {
+    ApiKeySet(String)
 }
 
 #[derive(Default, Debug, Serialize, Deserialize)]
@@ -55,7 +42,9 @@ pub struct NewsCardData {
 pub struct Headlines {
     articles: Vec<NewsCardData>,
     config: HeadlinesConfig,
-    api_key_initialized: bool
+    api_key_initialized: bool,
+    news_rx: Option<Receiver<NewsCardData>>,
+    app_tx: Option<SyncSender<Msg>>
 }
 
 fn setup_custom_fonts(ctx: &eframe::egui::Context) {
@@ -99,14 +88,41 @@ impl Headlines {
             Headlines {
                 api_key_initialized: false,
                 articles,
-                config
+                config,
+                news_rx: None,
+                app_tx: None
             }
         } else {
-            fetch_news(&config.api_key, &mut articles);
+            let api_key = config.api_key.to_string();
+            let (mut news_tx, news_rx) = channel();
+            let (app_tx, app_rx) = sync_channel(1);
+
+            std::thread::spawn(move || {
+                if !api_key.is_empty() {
+                    fetch_news(&api_key, &mut news_tx);
+                } else {
+                    tracing::debug!("here");
+                    loop {
+                        tracing::debug!("herehere");
+                        match app_rx.recv() {
+                            Ok(Msg::ApiKeySet(api_key)) => {
+                                tracing::info!("received api_key msg!");
+                                fetch_news(&api_key, &mut news_tx);
+                            },
+                            Err(e) => {
+                                tracing::error!("failed receiving message: {}", e);
+                            }
+                        }
+                    }
+                }
+            });
+
             Headlines {
                 api_key_initialized: true,
                 articles,
-                config
+                config,
+                news_rx: Some(news_rx),
+                app_tx: Some(app_tx)
             }
         }
     }
@@ -179,16 +195,36 @@ impl Headlines {
 
                 self.api_key_initialized = true;
 
+                if let Some(tx) = &self.app_tx {
+                    tx.send(Msg::ApiKeySet(self.config.api_key.to_string()));
+                };
+
                 tracing::info!("API key set");
             }
             ui.label("If you don't have an API key, create one at");
             ui.hyperlink("https://newsapi.org");
         });
     }
+
+    fn preload_articles(&mut self) {
+        if let Some(rx) = &self.news_rx {
+            match rx.try_recv() {
+                Ok(news) => {
+                    self.articles.push(news);
+                },
+                // Err(_) => {}
+                Err(e) => {
+                    tracing::warn!("Error receiving msg: {}", e);
+                }
+            }
+        }
+    }
 }
 
 impl App for Headlines {
     fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
+        ctx.request_repaint();
+
         if self.config.dark_mode {
             ctx.set_visuals(eframe::egui::Visuals::dark());
         } else {
@@ -198,6 +234,7 @@ impl App for Headlines {
         if !self.api_key_initialized {
             self.render_config(ctx);
         } else {
+            self.preload_articles();
             self.render_top_panel(ctx, frame);
             eframe::egui::CentralPanel::default().show(ctx, |ui| {
                 render_header(ui);
@@ -208,6 +245,27 @@ impl App for Headlines {
                 render_footer(ctx);
                 });
         }
+    }
+}
+
+fn fetch_news(api_key: &str, news_tx: &mut Sender<NewsCardData>) {
+    let response = NewsAPI::new(&api_key).fetch();
+    if let Ok(response) = response {
+        tracing::info!("Fetched!");
+        let response_articles = response.articles();
+        for a in response_articles.iter() {
+            let news = NewsCardData {
+                title: a.title().to_string(),
+                url: a.url().to_string(),
+                description: a.description().map(|s| s.to_string()).unwrap_or("...".to_string())
+            };
+            if let Err(e) = news_tx.send(news) {
+                tracing::error!("Error sending data: {}", e);
+            }
+            // articles.push(news);
+        }
+    } else {
+        tracing::error!("Could not fetch articles: {:?}", response);
     }
 }
 
