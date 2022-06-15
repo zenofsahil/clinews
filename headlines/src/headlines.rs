@@ -21,26 +21,30 @@ const RED: Color32 = Color32::from_rgb(255, 0, 0);
 const CYAN: Color32 = Color32::from_rgb(0, 255, 255);
 
 fn fetch_news(api_key: &str, articles: &mut Vec<NewsCardData>) {
-    if let Ok(response) = NewsAPI::new(api_key).fetch() {
+    let response = NewsAPI::new(api_key).fetch();
+    if let Ok(response) = response {
         tracing::info!("Fetched!");
         let response_articles = response.articles();
         for a in response_articles.iter() {
             let news = NewsCardData {
                 title: a.title().to_string(),
                 url: a.url().to_string(),
-                description: a.description().to_string()
+                description: a.description().map(|s| s.to_string()).unwrap_or("...".to_string())
             };
             articles.push(news);
         }
+    } else {
+        tracing::error!("Could not fetch articles: {:?}", response);
     }
 }
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Default, Debug, Serialize, Deserialize)]
 struct HeadlinesConfig {
     dark_mode: bool,
     api_key: String
 }
 
+#[derive(Debug)]
 pub struct NewsCardData {
     pub title: String,
     pub url: String,
