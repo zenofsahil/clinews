@@ -47,6 +47,8 @@ pub struct Headlines {
     app_tx: Option<SyncSender<Msg>>
 }
 
+/// This function has been taken as is from the egui examples
+/// Refer: https://github.com/emilk/egui/blob/7eeb292adfacd9311a420ac3ea225e2261a8f8d3/examples/custom_font/src/main.rs#L14
 fn setup_custom_fonts(ctx: &eframe::egui::Context) {
     // Start with the default fonts (we will be adding to them rather than replacing them).
     let mut fonts = eframe::egui::FontDefinitions::default();
