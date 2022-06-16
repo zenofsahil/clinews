@@ -166,6 +166,7 @@ impl Headlines {
                     let theme_btn = ui.add(Button::new(RichText::new("@").text_style(TextStyle::Body)));
                     if theme_btn.clicked() {
                         self.config.dark_mode = !self.config.dark_mode;
+                        self.save_config();
                     }
                 });
             });
@@ -173,18 +174,21 @@ impl Headlines {
         });
     }
 
+    fn save_config(&mut self) {
+        if let Err(e) = confy::store("headlines", HeadlinesConfig {
+            dark_mode: self.config.dark_mode,
+            api_key: self.config.api_key.to_owned()
+        }) {
+            tracing::error!("Failed saving the app state: {}", e);
+        };
+    }
+
     fn render_config(&mut self, ctx: &eframe::egui::Context) {
         Window::new("Configuration").show(ctx, |ui| {
             ui.label("Enter your API_KEY for newsapi.org");
             let text_input = ui.text_edit_singleline(&mut self.config.api_key);
             if text_input.lost_focus() && ui.input().key_pressed(eframe::egui::Key::Enter) {
-                if let Err(e) = confy::store("headlines", HeadlinesConfig {
-                    dark_mode: self.config.dark_mode,
-                    api_key: self.config.api_key.to_owned()
-                }) {
-                    tracing::error!("Failed saving the app state: {}", e);
-                };
-
+                self.save_config();
                 self.api_key_initialized = true;
 
                 if let Some(tx) = &self.app_tx {
