@@ -1,5 +1,5 @@
 use serde::{ Serialize, Deserialize };
-use std::{sync::mpsc::{ Receiver, Sender, channel, sync_channel, SyncSender }, thread};
+use std::sync::mpsc::{ Receiver, Sender, channel, sync_channel, SyncSender };
 use eframe::App;
 use eframe::egui::{
     Window,
@@ -84,7 +84,7 @@ impl Headlines {
 
         let config: HeadlinesConfig = confy::load("headlines").unwrap_or_default();
 
-        let mut articles: Vec<NewsCardData> = Vec::new();
+        let articles: Vec<NewsCardData> = Vec::new();
 
         let api_key = config.api_key.to_string();
         let (mut news_tx, news_rx) = channel();
@@ -188,7 +188,7 @@ impl Headlines {
                 self.api_key_initialized = true;
 
                 if let Some(tx) = &self.app_tx {
-                    tx.send(Msg::ApiKeySet(self.config.api_key.to_string()));
+                    let _ = tx.send(Msg::ApiKeySet(self.config.api_key.to_string()));
                 };
 
                 tracing::info!("API key set");
