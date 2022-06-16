@@ -84,46 +84,36 @@ impl Headlines {
 
         let mut articles: Vec<NewsCardData> = Vec::new();
 
-        if config.api_key.is_empty() {
-            Headlines {
-                api_key_initialized: false,
-                articles,
-                config,
-                news_rx: None,
-                app_tx: None
-            }
-        } else {
-            let api_key = config.api_key.to_string();
-            let (mut news_tx, news_rx) = channel();
-            let (app_tx, app_rx) = sync_channel(1);
+        let api_key = config.api_key.to_string();
+        let (mut news_tx, news_rx) = channel();
+        let (app_tx, app_rx) = sync_channel(1);
 
-            std::thread::spawn(move || {
-                if !api_key.is_empty() {
-                    fetch_news(&api_key, &mut news_tx);
-                } else {
-                    tracing::debug!("here");
-                    loop {
-                        tracing::debug!("herehere");
-                        match app_rx.recv() {
-                            Ok(Msg::ApiKeySet(api_key)) => {
-                                tracing::info!("received api_key msg!");
-                                fetch_news(&api_key, &mut news_tx);
-                            },
-                            Err(e) => {
-                                tracing::error!("failed receiving message: {}", e);
-                            }
+        std::thread::spawn(move || {
+            if !api_key.is_empty() {
+                fetch_news(&api_key, &mut news_tx);
+            } else {
+                tracing::debug!("here");
+                loop {
+                    tracing::debug!("herehere");
+                    match app_rx.recv() {
+                        Ok(Msg::ApiKeySet(api_key)) => {
+                            tracing::info!("received api_key msg!");
+                            fetch_news(&api_key, &mut news_tx);
+                        },
+                        Err(e) => {
+                            tracing::error!("failed receiving message: {}", e);
                         }
                     }
                 }
-            });
-
-            Headlines {
-                api_key_initialized: true,
-                articles,
-                config,
-                news_rx: Some(news_rx),
-                app_tx: Some(app_tx)
             }
+        });
+
+        Headlines {
+            api_key_initialized: !config.api_key.is_empty(),
+            articles,
+            config,
+            news_rx: Some(news_rx),
+            app_tx: Some(app_tx)
         }
     }
   
@@ -191,7 +181,7 @@ impl Headlines {
                     api_key: self.config.api_key.to_owned()
                 }) {
                     tracing::error!("Failed saving the app state: {}", e);
-                }
+                };
 
                 self.api_key_initialized = true;
 
