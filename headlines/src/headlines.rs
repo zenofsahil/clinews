@@ -44,6 +44,7 @@ pub struct Headlines {
     config: HeadlinesConfig,
     api_key_initialized: bool,
     news_rx: Option<Receiver<NewsCardData>>,
+    news_tx: Option<Sender<NewsCardData>>,
     app_tx: Option<SyncSender<Msg>>
 }
 
@@ -87,12 +88,13 @@ impl Headlines {
         let articles: Vec<NewsCardData> = Vec::new();
 
         let api_key = config.api_key.to_string();
-        let (mut news_tx, news_rx) = channel();
+        let (news_tx, news_rx) = channel();
+        let news_tx_ = news_tx.clone();
         let (app_tx, app_rx) = sync_channel(1);
 
         std::thread::spawn(move || {
             if !api_key.is_empty() {
-                fetch_news(&api_key, &mut news_tx);
+                fetch_news(&api_key, &news_tx);
             } else {
                 tracing::debug!("here");
                 loop {
@@ -100,7 +102,7 @@ impl Headlines {
                     match app_rx.recv() {
                         Ok(Msg::ApiKeySet(api_key)) => {
                             tracing::info!("received api_key msg!");
-                            fetch_news(&api_key, &mut news_tx);
+                            fetch_news(&api_key, &news_tx);
                         },
                         Err(e) => {
                             tracing::error!("failed receiving message: {}", e);
@@ -115,6 +117,7 @@ impl Headlines {
             articles,
             config,
             news_rx: Some(news_rx),
+            news_tx: Some(news_tx_),
             app_tx: Some(app_tx)
         }
     }
@@ -162,6 +165,21 @@ impl Headlines {
                         frame.quit()
                     }
                     let refresh_btn = ui.add(Button::new(RichText::new("r").text_style(TextStyle::Body)));
+
+                    if refresh_btn.clicked() {
+                        tracing::info!("Refreshing article list.");
+                        self.articles = vec![];
+                        if let Some(tx) = &self.news_tx {
+                            let tx_ = tx.clone();
+                            let api_key = self.config.api_key.clone();
+                            std::thread::spawn(move || {
+                                // Putting a sleep here to test that the UI gets repainted even as
+                                // there is a network delay in fetching the data.
+                                std::thread::sleep(std::time::Duration::from_millis(2000));
+                                fetch_news(&api_key, &tx_);
+                            });
+                        }
+                    }
 
                     let theme_btn = ui.add(Button::new(RichText::new("@").text_style(TextStyle::Body)));
                     if theme_btn.clicked() {
@@ -244,7 +262,7 @@ impl App for Headlines {
     }
 }
 
-fn fetch_news(api_key: &str, news_tx: &mut Sender<NewsCardData>) {
+fn fetch_news(api_key: &str, news_tx: &Sender<NewsCardData>) {
     let response = NewsAPI::new(&api_key).fetch();
     if let Ok(response) = response {
         tracing::info!("Fetched!");
