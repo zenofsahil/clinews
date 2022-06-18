@@ -12,10 +12,12 @@ serde = { version = "1.0.137", features = ["derive"] }
 tracing = "0.1.35"
 tracing-subscriber = "0.3.11"
 newsapi = {path = "../newsapi"}
-wasm-bindgen = "0.2.81"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 tracing-wasm = "0.2.0"
+gloo-timers = "0.2.4"
+wasm-bindgen = "0.2.81"
+wasm-bindgen-futures = "0.4.31"
