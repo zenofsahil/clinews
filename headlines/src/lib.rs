@@ -41,7 +41,7 @@ impl App for Headlines {
 }
 
 #[cfg(target_arch = "wasm32")]
-async fn fetch_web(api_key: String, news_tx: Sender<NewsCardData>) {
+pub async fn fetch_web(api_key: String, news_tx: Sender<NewsCardData>) {
     let response = NewsAPI::new(&api_key).fetch_web().await;
     if let Ok(response) = response {
         tracing::info!("Fetched!");

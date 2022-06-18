@@ -1,5 +1,6 @@
-
 use crate::fetch_news;
+#[cfg(target_arch = "wasm32")]
+use crate::fetch_web;
 use serde::{ Serialize, Deserialize };
 use std::sync::mpsc::{ Receiver, Sender, channel, sync_channel, SyncSender };
 use eframe::egui::{
@@ -111,16 +112,16 @@ impl Headlines {
             }
         });
 
-        // #[cfg(target_arch="wasm32")]
-        // let api_key_web = config.api_key.clone();
-        // #[cfg(target_arch="wasm32")]
-        // let news_tx_web = news_tx_.clone();
-        // #[cfg(target_arch="wasm32")]
-        // gloo_timers::callback::Timeout::new(10, move || {
-        //     // wasm_bindgen_futures::spawn_local(async {
-        //     //     fetch_web(api_key_web, news_tx_web).await;
-        //     // })
-        // }).forget();
+        #[cfg(target_arch="wasm32")]
+        let api_key_web = config.api_key.clone();
+        #[cfg(target_arch="wasm32")]
+        let news_tx_web = news_tx_.clone();
+        #[cfg(target_arch="wasm32")]
+        gloo_timers::callback::Timeout::new(10, move || {
+            wasm_bindgen_futures::spawn_local(async {
+                fetch_web(api_key_web, news_tx_web).await;
+            })
+        }).forget();
 
         Headlines {
             api_key_initialized: !config.api_key.is_empty(),
