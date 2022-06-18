@@ -123,6 +123,20 @@ impl Headlines {
             })
         }).forget();
 
+        #[cfg(target_arch="wasm32")]
+        let news_tx_web_ = news_tx_.clone();
+        #[cfg(target_arch="wasm32")]
+        gloo_timers::callback::Interval::new(500, move || {
+            match app_rx.try_recv() {
+                Ok(Msg::ApiKeySet(api_key)) => {
+                    wasm_bindgen_futures::spawn_local(fetch_web(api_key.clone(), news_tx_web_.clone()));
+                }
+                Err(e) => {
+                    tracing::error!("failed receiving msg: {}", e);
+                }
+            }
+        }).forget();
+
         Headlines {
             api_key_initialized: !config.api_key.is_empty(),
             articles,
