@@ -183,12 +183,21 @@ impl Headlines {
                         if let Some(tx) = &self.news_tx {
                             let tx_ = tx.clone();
                             let api_key = self.config.api_key.clone();
+
+                            #[cfg(not(target_arch="wasm32"))]
                             std::thread::spawn(move || {
                                 // Putting a sleep here to test that the UI gets repainted even as
                                 // there is a network delay in fetching the data.
                                 std::thread::sleep(std::time::Duration::from_millis(2000));
                                 fetch_news(&api_key, &tx_);
                             });
+
+                            #[cfg(target_arch="wasm32")]
+                            gloo_timers::callback::Timeout::new(2000, move || {
+                                wasm_bindgen_futures::spawn_local(async {
+                                    fetch_web(api_key, tx_).await;
+                                })
+                            }).forget();
                         }
                     }
 
