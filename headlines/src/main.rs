@@ -1,5 +1,3 @@
-mod headlines;
-
 use headlines::Headlines;
 
 fn main() {
