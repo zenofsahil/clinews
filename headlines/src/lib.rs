@@ -38,6 +38,10 @@ impl App for Headlines {
                 });
         }
     }
+
+    fn save(&mut self, storage: &mut dyn eframe::Storage) {
+        eframe::set_value(storage, "headlines", &self.config);
+    }
 }
 
 #[cfg(target_arch = "wasm32")]

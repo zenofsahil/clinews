@@ -32,6 +32,7 @@ checksum = "fcb51a0695d8f838b1ee009b3fbf66bda078cd64590202a864a8f3e8c4315c47"
 dependencies = [
  "getrandom",
  "once_cell",
+ "serde",
  "version_check",
 ]
 
@@ -231,17 +232,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "confy"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2913470204e9e8498a0f31f17f90a0de801ae92c8c5ac18c49af4819e6786697"
-dependencies = [
- "directories",
- "serde",
- "toml",
-]
-
-[[package]]
 name = "core-foundation"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -374,20 +364,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "directories"
-version = "2.0.2"
+name = "directories-next"
+version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "551a778172a450d7fc12e629ca3b0428d00f6afa9a43da1b630d54604e97371c"
+checksum = "339ee130d97a610ea5a5872d2bbb130fdf68884ff09d3028b81bec8a1ac23bbc"
 dependencies = [
- "cfg-if 0.1.10",
- "dirs-sys",
+ "cfg-if 1.0.0",
+ "dirs-sys-next",
 ]
 
 [[package]]
-name = "dirs-sys"
-version = "0.3.7"
+name = "dirs-sys-next"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b1d1d91c932ef41c0f2663aa8b0ca0342d444d842c06914aa0a7e352d0bada6"
+checksum = "4ebda144c4fe02d1f7ea1a7d9641b6fc6b580adcfa024ae48797ecdeb6825b4d"
 dependencies = [
  "libc",
  "redox_users",
@@ -422,6 +412,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "53fa97a8188c36261ea162e625dbb23599f67b60777b462b834fe38161b81dce"
 dependencies = [
  "bytemuck",
+ "directories-next",
  "egui",
  "egui-winit",
  "egui_glow",
@@ -429,6 +420,8 @@ dependencies = [
  "glutin",
  "js-sys",
  "percent-encoding",
+ "ron",
+ "serde",
  "tracing",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -445,6 +438,8 @@ dependencies = [
  "ahash",
  "epaint",
  "nohash-hasher",
+ "ron",
+ "serde",
  "tracing",
 ]
 
@@ -457,6 +452,7 @@ dependencies = [
  "arboard",
  "egui",
  "instant",
+ "serde",
  "tracing",
  "webbrowser",
  "winit",
@@ -484,6 +480,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c223f58c7e38abe1770f367b969f1b3fbd4704b67666bcb65dbb1adb0980ba72"
 dependencies = [
  "bytemuck",
+ "serde",
 ]
 
 [[package]]
@@ -508,6 +505,7 @@ dependencies = [
  "emath",
  "nohash-hasher",
  "parking_lot 0.12.1",
+ "serde",
 ]
 
 [[package]]
@@ -795,7 +793,6 @@ checksum = "ab5ef0d4909ef3724cc8cce6ccc8572c5c817592e9285f5464f8e86f8bd3726e"
 name = "headlines"
 version = "0.1.0"
 dependencies = [
- "confy",
  "eframe",
  "gloo-timers",
  "newsapi",
@@ -1562,6 +1559,17 @@ dependencies = [
  "untrusted",
  "web-sys",
  "winapi",
+]
+
+[[package]]
+name = "ron"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "88073939a61e5b7680558e6be56b419e208420c2adb92be54921fa6b72283f1a"
+dependencies = [
+ "base64",
+ "bitflags",
+ "serde",
 ]
 
 [[package]]
